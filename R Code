@@ -1,2 +1,86 @@
 # Code in R (v4.2.2) for the paper: "Development and initial validation of a hospital stress questionnaire"
 
+# Load packages and survey response data
+install.packages("tidyverse")
+library(tidyverse)
+install.packages("psych")
+library(psych)
+install.packages("readr")
+library(readr)
+data <- read_csv("data.csv")
+View(data)
+
+
+
+# Create seperate dataset for just HSQ items
+var_names <- paste0("HSQ_", 1:67)
+HSQ_items <- select(data, all_of(var_names))
+
+
+# Measurement range (identify floor and ceiling effects)
+m_range <- HSQ_items %>%
+           gather(item, response, starts_with("HSQ_")) %>%
+           group_by(item, response) %>%
+           summarize(percentage = n() / nrow(HSQ_items) * 100) %>%
+           ungroup() %>%
+           pivot_wider(names_from = response, values_from = percentage, values_fill = 0) %>%
+           column_to_rownames(var = "item") %>%
+           mutate(low = `1` + `NA`)
+
+
+# Set N/A values in HSQ equal to 1
+data <- data %>% mutate(across(HSQ_1:HSQ_67, ~ replace_na(., 1)))
+
+# Calculate a total HSQ score for each participant
+data <- data %>% mutate(HSQ_total = rowSums(across(HSQ_1:HSQ_67)))
+
+# Reverse code items 4, 5, 7, and 8 of PSS-10
+reverse_columns <- c("PSS10_4", "PSS10_5", "PSS10_7", "PSS10_8")
+data[, reverse_columns] <- 4 - data[, reverse_columns]
+
+# Calculate a total PSS-10 score for each participant
+data <- data %>% mutate(PSS10_total = rowSums(across(PSS10_1:PSS10_10)))
+
+# Descriptive statistics
+mean(data$Age)
+sd(data$Age)
+range(data$Age)
+mean(data$Age_patient)
+data %>% count(Sex)
+data %>% count(Birth_sex)
+data %>% count(Asian)
+data %>% count(Black)
+data %>% count(Mixed)
+data %>% count(White)
+data %>% count(Other)
+data %>% count(Education)
+
+# Calculate convergent validity
+cor.test(data$HSQ_total, data$PSS10_total)
+
+# Calculate internal consistency (Cronbach’s alpha)
+var_names <- paste0("HSQ_", 1:67)
+vars <- select(data, all_of(var_names))
+Cronbach_alpha <- psych::alpha(vars)
+
+# Recode Activities from categorical to numeric (median number of weeks)
+data <- data %>%
+    	mutate(Activities = recode(Activities,
+                                   "Less than a week" = 0.5,
+                                "Less than 2 weeks" = 1.5,
+                                "Less than a month" = 3,
+                                "4 - 6 weeks" = 5,
+                                "Up to 3 months" = 9,
+                                "Up to 6 months" = 19.5,
+                                "Up to a year" = 39,
+                                "I still haven't" = 52))
+
+# Correlations with HSQ total score (initial predictive validity)
+cor.test(data$HSQ_total, data$Vulnerability)
+cor.test(data$HSQ_total, data$Prepared)
+cor.test(data$HSQ_total, data$Activities)
+
+# Means and SDs of each item
+means <- colMeans(vars)
+sds <- apply(vars, 2, sd)
+summary_data <- data.frame(Variable = names(means), Mean = means, SD = sds)
