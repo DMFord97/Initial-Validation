@@ -1,4 +1,4 @@
-# Code in R (v4.2.2) for the paper: "Development and initial validation of a hospital stress questionnaire"
+# Code in R (v4.3.1) for the paper: "Development and initial validation of a hospital stress questionnaire"
 
 # Load packages and survey response data
 install.packages("tidyverse")
@@ -7,7 +7,7 @@ install.packages("psych")
 library(psych)
 install.packages("readr")
 library(readr)
-data <- read_csv("data.csv")
+data <- read_csv("initial_HSQ_data.csv")
 View(data)
 
 # Set N/A values in HSQ equal to 1
