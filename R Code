@@ -10,12 +10,9 @@ library(readr)
 data <- read_csv("data.csv")
 View(data)
 
-
-
 # Create seperate dataset for just HSQ items
 var_names <- paste0("HSQ_", 1:67)
 HSQ_items <- select(data, all_of(var_names))
-
 
 # Measurement range (identify floor and ceiling effects)
 m_range <- HSQ_items %>%
@@ -25,8 +22,12 @@ m_range <- HSQ_items %>%
            ungroup() %>%
            pivot_wider(names_from = response, values_from = percentage, values_fill = 0) %>%
            column_to_rownames(var = "item") %>%
-           mutate(low = `1` + `NA`)
+           mutate(low = `1` + `NA`) # Column for combined 1 and N/A values
 
+# Means and SDs of each HSQ item
+means <- colMeans(HSQ_items)
+sds <- apply(HSQ_items, 2, sd)
+summary_items <- data.frame(Variable = names(means), Mean = means, SD = sds)
 
 # Set N/A values in HSQ equal to 1
 data <- data %>% mutate(across(HSQ_1:HSQ_67, ~ replace_na(., 1)))
@@ -42,9 +43,9 @@ data[, reverse_columns] <- 4 - data[, reverse_columns]
 data <- data %>% mutate(PSS10_total = rowSums(across(PSS10_1:PSS10_10)))
 
 # Descriptive statistics
-mean(data$Age)
-sd(data$Age)
-range(data$Age)
+data %>% summarise(Mean = mean(Age),
+                   SD = sd(Age), Median = median(Age), Minimum = min(Age), Maximum = max(Age))
+data %>% summarise(Mean = mean(Age_patient), SD = sd(Age_patient), Median = median(Age_patient), Minimum = min(Age_patient), Maximum = max(Age_patient))
 mean(data$Age_patient)
 data %>% count(Sex)
 data %>% count(Birth_sex)
@@ -54,6 +55,25 @@ data %>% count(Mixed)
 data %>% count(White)
 data %>% count(Other)
 data %>% count(Education)
+
+# Create seperate dataset for just HSQ items
+var_names <- paste0("HSQ_", 1:67)
+HSQ_items <- select(data, all_of(var_names))
+
+# Measurement range (identify floor and ceiling effects)
+m_range <- HSQ_items %>%
+           gather(item, response, starts_with("HSQ_")) %>%
+           group_by(item, response) %>%
+           summarize(percentage = n() / nrow(HSQ_items) * 100) %>%
+           ungroup() %>%
+           pivot_wider(names_from = response, values_from = percentage, values_fill = 0) %>%
+           column_to_rownames(var = "item") %>%
+           mutate(low = `1` + `NA`) # Column for combined 1 and N/A values
+
+# Means and SDs of each HSQ item
+means <- colMeans(HSQ_items)
+sds <- apply(HSQ_items, 2, sd)
+summary_items <- data.frame(Variable = names(means), Mean = means, SD = sds)
 
 # Calculate convergent validity
 cor.test(data$HSQ_total, data$PSS10_total)
@@ -81,6 +101,6 @@ cor.test(data$HSQ_total, data$Prepared)
 cor.test(data$HSQ_total, data$Activities)
 
 # Means and SDs of each item
-means <- colMeans(vars)
-sds <- apply(vars, 2, sd)
-summary_data <- data.frame(Variable = names(means), Mean = means, SD = sds)
+means <- colMeans(HSQ_items)
+sds <- apply(HSQ_items, 2, sd)
+summary_items <- data.frame(Variable = names(means), Mean = means, SD = sds)
