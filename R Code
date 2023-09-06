@@ -70,28 +70,21 @@ summary_items <- data.frame(Variable = names(means), Mean = round(means, 2), SD 
 cor.test(data$HSQ_total, data$PSS10_total)
 
 # Calculate internal consistency (Cronbach’s alpha)
-var_names <- paste0("HSQ_", 1:67)
-vars <- select(data, all_of(var_names))
-Cronbach_alpha <- psych::alpha(vars)
+psych::alpha(HSQ_items)
 
 # Recode Activities from categorical to numeric (median number of weeks)
 data <- data %>%
-    	mutate(Activities = recode(Activities,
+    	  mutate(Activities = recode(Activities,
                                    "Less than a week" = 0.5,
-                                "Less than 2 weeks" = 1.5,
-                                "Less than a month" = 3,
-                                "4 - 6 weeks" = 5,
-                                "Up to 3 months" = 9,
-                                "Up to 6 months" = 19.5,
-                                "Up to a year" = 39,
-                                "I still haven't" = 52))
+                                   "Less than 2 weeks" = 1.5,
+                                   "Less than a month" = 3,
+                                   "4 - 6 weeks" = 5,
+                                   "Up to 3 months" = 9,
+                                   "Up to 6 months" = 19.5,
+                                   "Up to a year" = 39,
+                                   "I still haven't" = 52))
 
 # Correlations with HSQ total score (initial predictive validity)
 cor.test(data$HSQ_total, data$Vulnerability)
 cor.test(data$HSQ_total, data$Prepared)
 cor.test(data$HSQ_total, data$Activities)
-
-# Means and SDs of each item
-means <- colMeans(HSQ_items)
-sds <- apply(HSQ_items, 2, sd)
-summary_items <- data.frame(Variable = names(means), Mean = means, SD = sds)
